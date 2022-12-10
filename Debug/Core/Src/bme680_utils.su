@@ -1,0 +1,6 @@
+../Core/Src/bme680_utils.c:7:8:bme680_start	24	static
+../Core/Src/bme680_utils.c:42:6:bme680_refresh_data	48	static
+../Core/Src/bme680_utils.c:62:9:bme680_calculate_iaq	56	static
+../Core/Src/bme680_utils.c:92:7:BME680_ReadAltitude	24	static
+../Core/Src/bme680_utils.c:99:8:custom_i2c_read	32	static
+../Core/Src/bme680_utils.c:113:8:custom_i2c_write	32	static
