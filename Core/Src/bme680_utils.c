@@ -40,18 +40,15 @@ int8_t bme680_start(struct bme680_dev *dev) {
 }
 
 void bme680_refresh_data(struct bme680_dev *dev, struct bme680_field_data *data) {
-	if(!wait_for_data){
-		int8_t rslt = BME680_OK;
-
+	if(!wait_for_data) {
 		uint16_t profile_dur = 10;
 		bme680_get_profile_dur(&profile_dur, dev);
 
-		if (rslt == BME680_OK) {
-			rslt = bme680_set_sensor_mode(dev); /* Trigger a measurement */
-			wait_for_data = 1;
-			last_tick = HAL_GetTick();
-			if(data_is_ready)
-				bme680_get_sensor_data(data, dev);
+		bme680_set_sensor_mode(dev);
+		wait_for_data = 1;
+		last_tick = HAL_GetTick();
+		if(data_is_ready) {
+			bme680_get_sensor_data(data, dev);
 		}
 	} else if (wait_for_data && HAL_GetTick() - last_tick > 2500) {
 		wait_for_data = 0;
@@ -89,15 +86,14 @@ uint8_t bme680_calculate_iaq(struct bme680_field_data data){
 	return (100-air_quality_score) * 5;
 }
 
-float BME680_ReadAltitude(float atm) {
+float BME680_read_altitude(float atm) {
     float att = 0.0f;
     att = 44330.0 * (1.0 - pow(atm / BME680_EALEVELPRESSURE_PA, 0.1903));
     return att;
 }
 
 
-int8_t custom_i2c_read(uint8_t dev_id, uint8_t reg_addr, uint8_t *reg_data, uint16_t len)
-{
+int8_t custom_i2c_read(uint8_t dev_id, uint8_t reg_addr, uint8_t *reg_data, uint16_t len) {
 	int8_t result;
 
 	if (HAL_I2C_Master_Transmit(&hi2c1, (dev_id << 1), &reg_addr, 1, 10) != HAL_OK) {
@@ -114,7 +110,6 @@ int8_t custom_i2c_write(uint8_t dev_id, uint8_t reg_addr, uint8_t *reg_data, uin
 	int8_t result;
 	int8_t *buf;
 
-	// Allocate and load I2C transmit buffer
 	buf = malloc(len + 1);
 	buf[0] = reg_addr;
 	memcpy(buf + 1, reg_data, len);

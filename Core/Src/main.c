@@ -22,17 +22,6 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
-#include  <string.h>
-#include  <stdlib.h>
-#include  <stdint.h>
-#include  <stdio.h>
-
-#include "bme680.h"
-#include "bme680_utils.h"
-#include "bme680_defs.h"
-#include "registry.h"
-
-#include "stm32_seq.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -42,7 +31,10 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define DEBUG
+#define DEBUG_MODE
+#define MAX_LED 1
+#define USE_BRIGHTNESS 1
+#define PI 3.14159265
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -63,6 +55,8 @@ RTC_HandleTypeDef hrtc;
 
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim16;
+DMA_HandleTypeDef hdma_tim1_ch3;
 
 UART_HandleTypeDef huart1;
 DMA_HandleTypeDef hdma_usart1_tx;
@@ -92,6 +86,7 @@ static void MX_RTC_Init(void);
 static void MX_USB_PCD_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_TIM2_Init(void);
+static void MX_TIM16_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -105,6 +100,12 @@ int8_t rslt = BME680_OK;
 uint16_t adc_raw_dma[6];
 uint8_t to_notify = 0;
 uint16_t tim_internal_counter = 0;
+uint8_t OLED_update_counter = 0;
+
+uint8_t LED_data[MAX_LED][4];
+uint8_t LED_Mod[MAX_LED][4];  // for brightness
+uint16_t pwm_data[(24*MAX_LED)+50];
+int data_sent_flag=0;
 
 /* USER CODE END 0 */
 
@@ -156,16 +157,23 @@ int main(void)
   MX_USB_PCD_Init();
   MX_I2C1_Init();
   MX_TIM2_Init();
+  MX_TIM16_Init();
   /* USER CODE BEGIN 2 */
 
-  BME280_Init();
+//  BME280_Init();
   bme680_start(&dev);
 
   reg.mode = 1;
 
-
-//  HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED);
   HAL_TIM_Base_Start_IT(&htim2);
+  HAL_TIM_Base_Start_IT(&htim16);
+
+  OLED_Init (); // initialize the display
+
+  WS2812b_set_LED_color(0, 100, 100, 100);
+  WS2812b_set_brightness(10);
+  WS2812b_send();
+
   /* USER CODE END 2 */
 
   /* Init code for STM32_WPAN */
@@ -175,35 +183,12 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 	while (1)
 	{
-		HAL_GPIO_TogglePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin);
-
-		reg.bme280_temperature = BME280_ReadTemperature();
-		reg.bme280_pressure = BME280_ReadPressure();
-		reg.bme280_altitude = BME280_ReadAltitude(SEALEVELPRESSURE_PA);
-		reg.bme280_humidity = BME280_ReadHumidity();
-
-		if(dev.new_fields == 1){
-			reg.bme680_temperature = data.temperature;
-			reg.bme680_pressure = data.pressure;
-			reg.bme680_humidity = data.humidity * 0.001;
-			reg.bme680_altitude = BME680_ReadAltitude(reg.bme680_humidity);
-			reg.bme680_gas = data.gas_resistance;
-			reg.bme680_iaq = bme680_calculate_iaq(data);
-		}
-
-		reg.MiCS_CO = (uint16_t) adc_raw_dma[0]/MiCS_CO_PROPORTION_COEF;
-		reg.MiCS_NH3 = (uint16_t) adc_raw_dma[2]/MiCS_NH3_PROPORTION_COEF;
-		reg.MiCS_NO2 = (uint16_t) adc_raw_dma[3]/MiCS_NO2_PROPORTION_COEF;
-
-		reg.vref = ADC_CALC_VOLTAGE(4096, 5, adc_raw_dma[5]) * 3.3f;
-		reg.battery_lvl = (((float) adc_raw_dma[0] / 2925 - BATTERY_LOW) / (BATTERY_HIGH - BATTERY_LOW)) * 100;
-		reg.mcu_temp = ADC_CALC_TEMPERATURE(reg.vref * 1000, adc_raw_dma[4], ADC_RESOLUTION_12B);
 
     /* USER CODE END WHILE */
     MX_APPE_Process();
 
     /* USER CODE BEGIN 3 */
-	UTIL_SEQ_Run(UTIL_SEQ_DEFAULT);
+//	UTIL_SEQ_Run(UTIL_SEQ_DEFAULT);
 	}
   /* USER CODE END 3 */
 }
@@ -363,7 +348,7 @@ static void MX_I2C1_Init(void)
 
   /* USER CODE END I2C1_Init 1 */
   hi2c1.Instance = I2C1;
-  hi2c1.Init.Timing = 0x00707CBB;
+  hi2c1.Init.Timing = 0x00300F38;
   hi2c1.Init.OwnAddress1 = 0;
   hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
   hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
@@ -411,7 +396,7 @@ static void MX_I2C3_Init(void)
 
   /* USER CODE END I2C3_Init 1 */
   hi2c3.Instance = I2C3;
-  hi2c3.Init.Timing = 0x00707CBB;
+  hi2c3.Init.Timing = 0x00300F38;
   hi2c3.Init.OwnAddress1 = 0;
   hi2c3.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
   hi2c3.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
@@ -554,12 +539,12 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 1 */
   htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 1000;
+  htim1.Init.Prescaler = 0;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 16000;
+  htim1.Init.Period = 40-1;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
-  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
   {
     Error_Handler();
@@ -657,6 +642,38 @@ static void MX_TIM2_Init(void)
   /* USER CODE BEGIN TIM2_Init 2 */
 
   /* USER CODE END TIM2_Init 2 */
+
+}
+
+/**
+  * @brief TIM16 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM16_Init(void)
+{
+
+  /* USER CODE BEGIN TIM16_Init 0 */
+
+  /* USER CODE END TIM16_Init 0 */
+
+  /* USER CODE BEGIN TIM16_Init 1 */
+
+  /* USER CODE END TIM16_Init 1 */
+  htim16.Instance = TIM16;
+  htim16.Init.Prescaler = 1000;
+  htim16.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim16.Init.Period = 16000;
+  htim16.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim16.Init.RepetitionCounter = 0;
+  htim16.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  if (HAL_TIM_Base_Init(&htim16) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM16_Init 2 */
+
+  /* USER CODE END TIM16_Init 2 */
 
 }
 
@@ -761,6 +778,9 @@ static void MX_DMA_Init(void)
   /* DMA1_Channel3_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Channel3_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel3_IRQn);
+  /* DMA1_Channel4_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel4_IRQn);
 
 }
 
@@ -836,45 +856,111 @@ void send_str_by_uart(const char *format){
 //	send_str_by_uart("\n\r== COVERTION DONE ==");
 //}
 
+void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
+{
+	if(htim->Instance == TIM1){
+		HAL_TIM_PWM_Stop_DMA(&htim1, TIM_CHANNEL_3);
+		data_sent_flag=1;
+	}
+}
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
-	tim_internal_counter++;
+	if(htim->Instance == TIM2){
+		tim_internal_counter++;
 
-    HAL_GPIO_TogglePin(LED_RED_GPIO_Port, LED_RED_Pin);
+		HAL_GPIO_TogglePin(LED_RED_GPIO_Port, LED_RED_Pin);
 
-    to_notify = 1;
+		to_notify = 1;
 
-    bme680_refresh_data(&dev, &data);
+		bme680_refresh_data(&dev, &data);
 
-    if(tim_internal_counter % 5 == 0){
-    	HAL_ADC_Start_DMA(&hadc1, (uint32_t*) adc_raw_dma, 6);
-    }
+		if(tim_internal_counter % 5 == 0){
+			HAL_ADC_Start_DMA(&hadc1, (uint32_t*) adc_raw_dma, 6);
+		}
 
+		if(tim_internal_counter % 10 == 0){
+			OLED_update_counter = send_value_to_screen(OLED_update_counter);
+		#ifdef DEBUG_MODE
+			send_int_by_uart("\n\rInternal: MCU temperature: %d", reg.mcu_temp);
+			send_int_by_uart("\n\rInternal: Battery: %d", reg.battery_lvl);
+			send_float_by_uart("\n\rInternal: Vref: %.3f V", reg.vref);
 
-#ifdef DEBUG
-    send_int_by_uart("\n\rInternal: MCU temperature: %d", reg.mcu_temp);
-	send_int_by_uart("\n\rInternal: Battery: %d", reg.battery_lvl);
-	send_float_by_uart("\n\rInternal: Vref: %.3f V", reg.vref);
+//			send_float_by_uart("\n\rBME280: temperature: %.3f *C", reg.bme280_temperature);
+//			send_float_by_uart("\n\rBME280: pressure: %.3f Pa", reg.bme280_pressure);
+//			send_float_by_uart("\n\rBME280: altitude: %.3f m", reg.bme280_altitude);
+//			send_float_by_uart("\n\rBME280: humidity: %.3f %%", reg.bme280_humidity);
 
-	send_float_by_uart("\n\rBME280: temperature: %.3f *C", reg.bme280_temperature);
-	send_float_by_uart("\n\rBME280: pressure: %.3f Pa", reg.bme280_pressure);
-	send_float_by_uart("\n\rBME280: altitude: %.3f m", reg.bme280_altitude);
-	send_float_by_uart("\n\rBME280: humidity: %.3f %%", reg.bme280_humidity);
+			send_float_by_uart("\n\rBME680: temperature: %.3f *C", reg.bme680_temperature);
+			send_int_by_uart("\n\rBME680: pressure: %d Pa", reg.bme680_pressure);
+			send_float_by_uart("\n\rBME680: humidity: %.3f %%", reg.bme680_humidity);
+			send_float_by_uart("\n\rBME680: altitude: %.3f m", reg.bme680_altitude);
+			send_int_by_uart("\n\rBME680: gas: %d", reg.bme680_gas);
+			send_int_by_uart("\n\rBME680: IAQ: %d", reg.bme680_iaq);
 
-	send_float_by_uart("\n\rBME680: temperature: %.3f *C", reg.bme680_temperature);
-	send_int_by_uart("\n\rBME680: pressure: %d Pa", reg.bme680_pressure);
-	send_float_by_uart("\n\rBME680: humidity: %.3f %%", reg.bme680_humidity);
-	send_float_by_uart("\n\rBME680: altitude: %.3f m", reg.bme680_altitude);
-	send_int_by_uart("\n\rBME680: gas: %d", reg.bme680_gas);
-	send_int_by_uart("\n\rBME680: IAQ: %d", reg.bme680_iaq);
+			send_int_by_uart("\n\rMiCS: CO: %d ppm", reg.MiCS_CO);
+			send_int_by_uart("\n\rMiCS: NH3: %d ppm", reg.MiCS_NH3);
+			send_int_by_uart("\n\rMiCS: NO2: %d ppm", reg.MiCS_NO2);
 
-	send_int_by_uart("\n\rMiCS: CO: %d ppm", reg.MiCS_CO);
-	send_int_by_uart("\n\rMiCS: NH3: %d ppm", reg.MiCS_NH3);
-	send_int_by_uart("\n\rMiCS: NO2: %d ppm", reg.MiCS_NO2);
+			send_str_by_uart("\n\r==========================");
+		#endif
+		}
+	}
 
-	send_str_by_uart("\n\r==========================");
-#endif
+	if(htim->Instance == TIM16){
+		HAL_GPIO_TogglePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin);
+
+		reg.bme280_temperature = BME280_ReadTemperature();
+		reg.bme280_pressure = BME280_ReadPressure();
+		reg.bme280_altitude = BME280_ReadAltitude(SEALEVELPRESSURE_PA);
+		reg.bme280_humidity = BME280_ReadHumidity();
+
+		if(dev.new_fields == 1){
+			reg.bme680_temperature = data.temperature * 0.01;
+			reg.bme680_pressure = data.pressure;
+			reg.bme680_humidity = data.humidity * 0.001;
+			reg.bme680_altitude = BME680_read_altitude(reg.bme680_humidity);
+			reg.bme680_gas = data.gas_resistance;
+			reg.bme680_iaq = bme680_calculate_iaq(data);
+		}
+
+		reg.MiCS_CO = (uint16_t) adc_raw_dma[0]/MiCS_CO_PROPORTION_COEF;
+		reg.MiCS_NH3 = (uint16_t) adc_raw_dma[2]/MiCS_NH3_PROPORTION_COEF;
+		reg.MiCS_NO2 = (uint16_t) adc_raw_dma[3]/MiCS_NO2_PROPORTION_COEF;
+
+		reg.vref = 3.362;//ADC_CALC_VOLTAGE(4096, 5, adc_raw_dma[5]) * 3.3f;
+		reg.battery_lvl = 17;//(((float) adc_raw_dma[0] / 2925 - BATTERY_LOW) / (BATTERY_HIGH - BATTERY_LOW)) * 100;
+		reg.mcu_temp = 46;//ADC_CALC_TEMPERATURE(reg.vref * 1000, adc_raw_dma[4], ADC_RESOLUTION_12B);
+
+	}
 }
+
+uint8_t send_value_to_screen(uint8_t counter){
+	uint8_t temp_counter = counter;
+
+	char line1[10];
+	char line2[10];
+
+	switch(temp_counter){
+		case 0: {sprintf(line1, "IAQ:"); 	 sprintf(line2, "%d", reg.bme680_iaq); break;}
+		case 1: {sprintf(line1, "Temperat:"); sprintf(line2, "%.3f *", reg.bme680_temperature); break;}
+		case 2: {sprintf(line1, "Pressure:"); sprintf(line2, "%ld Pa", reg.bme680_pressure); break;}
+		case 3: {sprintf(line1, "Humidity:"); sprintf(line2, "%.3f %%", reg.bme680_humidity); break;}
+		case 4: {sprintf(line1, "Altitude:"); sprintf(line2, "%.2f m", reg.bme680_altitude); break;}
+		case 5: {sprintf(line1, "CO:");		 sprintf(line2, "%d ppm", reg.MiCS_CO); break;}
+		case 6: {sprintf(line1, "NH3:");		 sprintf(line2, "%d ppm", reg.MiCS_NH3); break;}
+		case 7: {sprintf(line1, "NO2:"); sprintf(line2, "%d ppm", reg.MiCS_NO2); break; }
+	}
+
+	OLED_fill(OLED_COLOR_BLACK);
+	OLED_gotoXY (10,10);
+	OLED_puts (line1, &Font_11x18, 1);
+	OLED_gotoXY (10, 30);
+	OLED_puts (line2, &Font_11x18, 1);
+	OLED_update_screen();
+
+	return temp_counter = ++temp_counter > 7 ? 0 : temp_counter;
+}
+
 
 uint8_t get_to_notify(){
 	return to_notify;
@@ -882,6 +968,58 @@ uint8_t get_to_notify(){
 
 void notified(){
 	to_notify = 0;
+}
+
+void WS2812b_set_LED_color (int index, int Red, int Green, int Blue) {
+	LED_data[index][0] = index;
+	LED_data[index][1] = Green;
+	LED_data[index][2] = Red;
+	LED_data[index][3] = Blue;
+}
+
+void WS2812b_set_brightness (int brightness){  // 0-45
+#if USE_BRIGHTNESS
+	if (brightness > 45) brightness = 45;
+	for (int i=0; i<MAX_LED; i++) {
+		LED_Mod[i][0] = LED_data[i][0];
+		for (int j=1; j<4; j++)
+		{
+			float angle = 90-brightness;
+			angle = angle*PI / 180;
+			LED_Mod[i][j] = (LED_data[i][j])/(tan(angle));
+		}
+	}
+#endif
+}
+
+void WS2812b_send (void) {
+	uint32_t index=0;
+	uint32_t color;
+
+	for (int i= 0; i<MAX_LED; i++) {
+#if USE_BRIGHTNESS
+		color = ((LED_Mod[i][1]<<16) | (LED_Mod[i][2]<<8) | (LED_Mod[i][3]));
+#else
+		color = ((LED_data[i][1]<<16) | (LED_data[i][2]<<8) | (LED_data[i][3]));
+#endif
+
+		for (int i=23; i>=0; i--) {
+			if (color&(1<<i)) {
+				pwm_data[index] = 60;
+			} else pwm_data[index] = 30;
+
+			index++;
+		}
+	}
+
+	for (int i=0; i<50; i++) {
+		pwm_data[index] = 0;
+		index++;
+	}
+
+	HAL_TIM_PWM_Start_DMA(&htim1, TIM_CHANNEL_3, (uint32_t *)pwm_data, index);
+	while (!data_sent_flag){};
+	data_sent_flag = 0;
 }
 /* USER CODE END 4 */
 

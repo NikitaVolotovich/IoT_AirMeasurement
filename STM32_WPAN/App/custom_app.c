@@ -29,7 +29,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "registry.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -74,7 +74,7 @@ typedef struct
  * START of Section BLE_APP_CONTEXT
  */
 
-static Custom_App_Context_t Custom_App_Context;
+//static Custom_App_Context_t Custom_App_Context;
 
 /**
  * END of Section BLE_APP_CONTEXT
@@ -90,73 +90,48 @@ uint8_t notify_counter = 0;
 /* Private function prototypes -----------------------------------------------*/
 /* STATUS_SVC */
 static void Custom_Mode_Update_Char(void);
-static void Custom_Mode_Send_Notification(void);
+//static void Custom_Mode_Send_Notification(void);
 static void Custom_Battery_v_Update_Char(void);
-static void Custom_Battery_v_Send_Notification(void);
+//static void Custom_Battery_v_Send_Notification(void);
 static void Custom_Mcu_temp_Update_Char(void);
-static void Custom_Mcu_temp_Send_Notification(void);
+//static void Custom_Mcu_temp_Send_Notification(void);
 /* BME_SVC */
 static void Custom_Bme_iaq_Update_Char(void);
-static void Custom_Bme_iaq_Send_Notification(void);
+//static void Custom_Bme_iaq_Send_Notification(void);
 static void Custom_Bme_temp_Update_Char(void);
-static void Custom_Bme_temp_Send_Notification(void);
+//static void Custom_Bme_temp_Send_Notification(void);
 static void Custom_Bme_hum_Update_Char(void);
-static void Custom_Bme_hum_Send_Notification(void);
+//static void Custom_Bme_hum_Send_Notification(void);
 static void Custom_Bme_press_Update_Char(void);
-static void Custom_Bme_press_Send_Notification(void);
+//static void Custom_Bme_press_Send_Notification(void);
 /* MiCS_SVC */
 static void Custom_Co_Update_Char(void);
-static void Custom_Co_Send_Notification(void);
+//static void Custom_Co_Send_Notification(void);
 static void Custom_Nh3_Update_Char(void);
-static void Custom_Nh3_Send_Notification(void);
+//static void Custom_Nh3_Send_Notification(void);
 static void Custom_No2_Update_Char(void);
-static void Custom_No2_Send_Notification(void);
+//static void Custom_No2_Send_Notification(void);
 
 /* USER CODE BEGIN PFP */
 void myTask(void){
-//	if(!HAL_GPIO_ReadPin(B2_GPIO_Port, B2_Pin)) {
-//		HAL_GPIO_TogglePin(LED_RED_GPIO_Port, LED_RED_Pin);
-//		UpdateCharData[0] = 0x1;
-//		Custom_Mode_Update_Char();
-//		UpdateCharData[0] = 0x21;
-//		Custom_Battery_v_Update_Char();
-//		UpdateCharData[0] = 0x32;
-//		Custom_Mcu_temp_Update_Char();
-//
-//		UpdateCharData[0] = 0xA1;
-//		Custom_Bme_iaq_Update_Char();
-//		UpdateCharData[0] = 0xB1;
-//		Custom_Bme_temp_Update_Char();
-//		UpdateCharData[0] = 0xC1;
-//		Custom_Bme_hum_Update_Char();
-//		UpdateCharData[0] = 0xD1;
-//		Custom_Bme_press_Update_Char();
-//
-//		UpdateCharData[0] = 0x70;
-//		Custom_Co_Update_Char();
-//		UpdateCharData[0] = 0x71;
-//		Custom_Nh3_Update_Char();
-//		UpdateCharData[0] = 0x72;
-//		Custom_No2_Update_Char();
-//	}
-
 	if(get_to_notify()) {
 		HAL_GPIO_TogglePin(LED_RED_GPIO_Port, LED_RED_Pin);
 		switch(notify_counter){
-			case 0: Custom_Mode_Update_Char();
-			case 1: Custom_Battery_v_Update_Char();
-			case 2: Custom_Mcu_temp_Update_Char();
+			case 0: Custom_Mode_Update_Char(); break;
+			case 1: Custom_Battery_v_Update_Char(); break;
+			case 2: Custom_Mcu_temp_Update_Char(); break;
 
-			case 4: Custom_Bme_iaq_Update_Char();
-			case 5: Custom_Bme_temp_Update_Char();
-			case 6: Custom_Bme_hum_Update_Char();
-			case 7: Custom_Bme_press_Update_Char();
+			case 4: Custom_Bme_iaq_Update_Char(); break;
+			case 5: Custom_Bme_temp_Update_Char(); break;
+			case 6: Custom_Bme_hum_Update_Char(); break;
+			case 7: Custom_Bme_press_Update_Char(); break;
 
-			case 8: Custom_Co_Update_Char();
-			case 9: Custom_Nh3_Update_Char();
-			case 10: Custom_No2_Update_Char();
+			case 8: Custom_Co_Update_Char(); break;
+			case 9: Custom_Nh3_Update_Char(); break;
+			case 10: Custom_No2_Update_Char(); break;
 		}
 		notified();
+		notify_counter++;
 	}
 	if(notify_counter == 10)
 		notify_counter = 0;
@@ -395,25 +370,25 @@ void Custom_Mode_Update_Char(void) /* Property Read */
   return;
 }
 
-void Custom_Mode_Send_Notification(void) /* Property Notification */
-{
-  uint8_t updateflag = 0;
-
-  /* USER CODE BEGIN Mode_NS_1*/
-
-  /* USER CODE END Mode_NS_1*/
-
-  if (updateflag != 0)
-  {
-    Custom_STM_App_Update_Char(CUSTOM_STM_MODE, (uint8_t *)NotifyCharData);
-  }
-
-  /* USER CODE BEGIN Mode_NS_Last*/
-
-  /* USER CODE END Mode_NS_Last*/
-
-  return;
-}
+//void Custom_Mode_Send_Notification(void) /* Property Notification */
+//{
+//  uint8_t updateflag = 0;
+//
+//  /* USER CODE BEGIN Mode_NS_1*/
+//
+//  /* USER CODE END Mode_NS_1*/
+//
+//  if (updateflag != 0)
+//  {
+//    Custom_STM_App_Update_Char(CUSTOM_STM_MODE, (uint8_t *)NotifyCharData);
+//  }
+//
+//  /* USER CODE BEGIN Mode_NS_Last*/
+//
+//  /* USER CODE END Mode_NS_Last*/
+//
+//  return;
+//}
 
 void Custom_Battery_v_Update_Char(void) /* Property Read */
 {
@@ -435,25 +410,25 @@ void Custom_Battery_v_Update_Char(void) /* Property Read */
   return;
 }
 
-void Custom_Battery_v_Send_Notification(void) /* Property Notification */
-{
-  uint8_t updateflag = 0;
-
-  /* USER CODE BEGIN Battery_v_NS_1*/
-
-  /* USER CODE END Battery_v_NS_1*/
-
-  if (updateflag != 0)
-  {
-    Custom_STM_App_Update_Char(CUSTOM_STM_BATTERY_V, (uint8_t *)NotifyCharData);
-  }
-
-  /* USER CODE BEGIN Battery_v_NS_Last*/
-
-  /* USER CODE END Battery_v_NS_Last*/
-
-  return;
-}
+//void Custom_Battery_v_Send_Notification(void) /* Property Notification */
+//{
+//  uint8_t updateflag = 0;
+//
+//  /* USER CODE BEGIN Battery_v_NS_1*/
+//
+//  /* USER CODE END Battery_v_NS_1*/
+//
+//  if (updateflag != 0)
+//  {
+//    Custom_STM_App_Update_Char(CUSTOM_STM_BATTERY_V, (uint8_t *)NotifyCharData);
+//  }
+//
+//  /* USER CODE BEGIN Battery_v_NS_Last*/
+//
+//  /* USER CODE END Battery_v_NS_Last*/
+//
+//  return;
+//}
 
 void Custom_Mcu_temp_Update_Char(void) /* Property Read */
 {
@@ -475,25 +450,25 @@ void Custom_Mcu_temp_Update_Char(void) /* Property Read */
   return;
 }
 
-void Custom_Mcu_temp_Send_Notification(void) /* Property Notification */
-{
-  uint8_t updateflag = 0;
-
-  /* USER CODE BEGIN Mcu_temp_NS_1*/
-
-  /* USER CODE END Mcu_temp_NS_1*/
-
-  if (updateflag != 0)
-  {
-    Custom_STM_App_Update_Char(CUSTOM_STM_MCU_TEMP, (uint8_t *)NotifyCharData);
-  }
-
-  /* USER CODE BEGIN Mcu_temp_NS_Last*/
-
-  /* USER CODE END Mcu_temp_NS_Last*/
-
-  return;
-}
+//void Custom_Mcu_temp_Send_Notification(void) /* Property Notification */
+//{
+//  uint8_t updateflag = 0;
+//
+//  /* USER CODE BEGIN Mcu_temp_NS_1*/
+//
+//  /* USER CODE END Mcu_temp_NS_1*/
+//
+//  if (updateflag != 0)
+//  {
+//    Custom_STM_App_Update_Char(CUSTOM_STM_MCU_TEMP, (uint8_t *)NotifyCharData);
+//  }
+//
+//  /* USER CODE BEGIN Mcu_temp_NS_Last*/
+//
+//  /* USER CODE END Mcu_temp_NS_Last*/
+//
+//  return;
+//}
 
 /* BME_SVC */
 void Custom_Bme_iaq_Update_Char(void) /* Property Read */
@@ -516,25 +491,25 @@ void Custom_Bme_iaq_Update_Char(void) /* Property Read */
   return;
 }
 
-void Custom_Bme_iaq_Send_Notification(void) /* Property Notification */
-{
-  uint8_t updateflag = 0;
-
-  /* USER CODE BEGIN Bme_iaq_NS_1*/
-
-  /* USER CODE END Bme_iaq_NS_1*/
-
-  if (updateflag != 0)
-  {
-    Custom_STM_App_Update_Char(CUSTOM_STM_BME_IAQ, (uint8_t *)NotifyCharData);
-  }
-
-  /* USER CODE BEGIN Bme_iaq_NS_Last*/
-
-  /* USER CODE END Bme_iaq_NS_Last*/
-
-  return;
-}
+//void Custom_Bme_iaq_Send_Notification(void) /* Property Notification */
+//{
+//  uint8_t updateflag = 0;
+//
+//  /* USER CODE BEGIN Bme_iaq_NS_1*/
+//
+//  /* USER CODE END Bme_iaq_NS_1*/
+//
+//  if (updateflag != 0)
+//  {
+//    Custom_STM_App_Update_Char(CUSTOM_STM_BME_IAQ, (uint8_t *)NotifyCharData);
+//  }
+//
+//  /* USER CODE BEGIN Bme_iaq_NS_Last*/
+//
+//  /* USER CODE END Bme_iaq_NS_Last*/
+//
+//  return;
+//}
 
 void Custom_Bme_temp_Update_Char(void) /* Property Read */
 {
@@ -556,25 +531,25 @@ void Custom_Bme_temp_Update_Char(void) /* Property Read */
   return;
 }
 
-void Custom_Bme_temp_Send_Notification(void) /* Property Notification */
-{
-  uint8_t updateflag = 0;
-
-  /* USER CODE BEGIN Bme_temp_NS_1*/
-
-  /* USER CODE END Bme_temp_NS_1*/
-
-  if (updateflag != 0)
-  {
-    Custom_STM_App_Update_Char(CUSTOM_STM_BME_TEMP, (uint8_t *)NotifyCharData);
-  }
-
-  /* USER CODE BEGIN Bme_temp_NS_Last*/
-
-  /* USER CODE END Bme_temp_NS_Last*/
-
-  return;
-}
+//void Custom_Bme_temp_Send_Notification(void) /* Property Notification */
+//{
+//  uint8_t updateflag = 0;
+//
+//  /* USER CODE BEGIN Bme_temp_NS_1*/
+//
+//  /* USER CODE END Bme_temp_NS_1*/
+//
+//  if (updateflag != 0)
+//  {
+//    Custom_STM_App_Update_Char(CUSTOM_STM_BME_TEMP, (uint8_t *)NotifyCharData);
+//  }
+//
+//  /* USER CODE BEGIN Bme_temp_NS_Last*/
+//
+//  /* USER CODE END Bme_temp_NS_Last*/
+//
+//  return;
+//}
 
 void Custom_Bme_hum_Update_Char(void) /* Property Read */
 {
@@ -596,25 +571,25 @@ void Custom_Bme_hum_Update_Char(void) /* Property Read */
   return;
 }
 
-void Custom_Bme_hum_Send_Notification(void) /* Property Notification */
-{
-  uint8_t updateflag = 0;
-
-  /* USER CODE BEGIN Bme_hum_NS_1*/
-
-  /* USER CODE END Bme_hum_NS_1*/
-
-  if (updateflag != 0)
-  {
-    Custom_STM_App_Update_Char(CUSTOM_STM_BME_HUM, (uint8_t *)NotifyCharData);
-  }
-
-  /* USER CODE BEGIN Bme_hum_NS_Last*/
-
-  /* USER CODE END Bme_hum_NS_Last*/
-
-  return;
-}
+//void Custom_Bme_hum_Send_Notification(void) /* Property Notification */
+//{
+//  uint8_t updateflag = 0;
+//
+//  /* USER CODE BEGIN Bme_hum_NS_1*/
+//
+//  /* USER CODE END Bme_hum_NS_1*/
+//
+//  if (updateflag != 0)
+//  {
+//    Custom_STM_App_Update_Char(CUSTOM_STM_BME_HUM, (uint8_t *)NotifyCharData);
+//  }
+//
+//  /* USER CODE BEGIN Bme_hum_NS_Last*/
+//
+//  /* USER CODE END Bme_hum_NS_Last*/
+//
+//  return;
+//}
 
 void Custom_Bme_press_Update_Char(void) /* Property Read */
 {
@@ -636,25 +611,25 @@ void Custom_Bme_press_Update_Char(void) /* Property Read */
   return;
 }
 
-void Custom_Bme_press_Send_Notification(void) /* Property Notification */
-{
-  uint8_t updateflag = 0;
-
-  /* USER CODE BEGIN Bme_press_NS_1*/
-
-  /* USER CODE END Bme_press_NS_1*/
-
-  if (updateflag != 0)
-  {
-    Custom_STM_App_Update_Char(CUSTOM_STM_BME_PRESS, (uint8_t *)NotifyCharData);
-  }
-
-  /* USER CODE BEGIN Bme_press_NS_Last*/
-
-  /* USER CODE END Bme_press_NS_Last*/
-
-  return;
-}
+//void Custom_Bme_press_Send_Notification(void) /* Property Notification */
+//{
+//  uint8_t updateflag = 0;
+//
+//  /* USER CODE BEGIN Bme_press_NS_1*/
+//
+//  /* USER CODE END Bme_press_NS_1*/
+//
+//  if (updateflag != 0)
+//  {
+//    Custom_STM_App_Update_Char(CUSTOM_STM_BME_PRESS, (uint8_t *)NotifyCharData);
+//  }
+//
+//  /* USER CODE BEGIN Bme_press_NS_Last*/
+//
+//  /* USER CODE END Bme_press_NS_Last*/
+//
+//  return;
+//}
 
 /* MiCS_SVC */
 void Custom_Co_Update_Char(void) /* Property Read */
@@ -677,25 +652,25 @@ void Custom_Co_Update_Char(void) /* Property Read */
   return;
 }
 
-void Custom_Co_Send_Notification(void) /* Property Notification */
-{
-  uint8_t updateflag = 0;
-
-  /* USER CODE BEGIN Co_NS_1*/
-
-  /* USER CODE END Co_NS_1*/
-
-  if (updateflag != 0)
-  {
-    Custom_STM_App_Update_Char(CUSTOM_STM_CO, (uint8_t *)NotifyCharData);
-  }
-
-  /* USER CODE BEGIN Co_NS_Last*/
-
-  /* USER CODE END Co_NS_Last*/
-
-  return;
-}
+//void Custom_Co_Send_Notification(void) /* Property Notification */
+//{
+//  uint8_t updateflag = 0;
+//
+//  /* USER CODE BEGIN Co_NS_1*/
+//
+//  /* USER CODE END Co_NS_1*/
+//
+//  if (updateflag != 0)
+//  {
+//    Custom_STM_App_Update_Char(CUSTOM_STM_CO, (uint8_t *)NotifyCharData);
+//  }
+//
+//  /* USER CODE BEGIN Co_NS_Last*/
+//
+//  /* USER CODE END Co_NS_Last*/
+//
+//  return;
+//}
 
 void Custom_Nh3_Update_Char(void) /* Property Read */
 {
@@ -717,25 +692,25 @@ void Custom_Nh3_Update_Char(void) /* Property Read */
   return;
 }
 
-void Custom_Nh3_Send_Notification(void) /* Property Notification */
-{
-  uint8_t updateflag = 0;
-
-  /* USER CODE BEGIN Nh3_NS_1*/
-
-  /* USER CODE END Nh3_NS_1*/
-
-  if (updateflag != 0)
-  {
-    Custom_STM_App_Update_Char(CUSTOM_STM_NH3, (uint8_t *)NotifyCharData);
-  }
-
-  /* USER CODE BEGIN Nh3_NS_Last*/
-
-  /* USER CODE END Nh3_NS_Last*/
-
-  return;
-}
+//void Custom_Nh3_Send_Notification(void) /* Property Notification */
+//{
+//  uint8_t updateflag = 0;
+//
+//  /* USER CODE BEGIN Nh3_NS_1*/
+//
+//  /* USER CODE END Nh3_NS_1*/
+//
+//  if (updateflag != 0)
+//  {
+//    Custom_STM_App_Update_Char(CUSTOM_STM_NH3, (uint8_t *)NotifyCharData);
+//  }
+//
+//  /* USER CODE BEGIN Nh3_NS_Last*/
+//
+//  /* USER CODE END Nh3_NS_Last*/
+//
+//  return;
+//}
 
 void Custom_No2_Update_Char(void) /* Property Read */
 {
@@ -757,25 +732,25 @@ void Custom_No2_Update_Char(void) /* Property Read */
   return;
 }
 
-void Custom_No2_Send_Notification(void) /* Property Notification */
-{
-  uint8_t updateflag = 0;
-
-  /* USER CODE BEGIN No2_NS_1*/
-
-  /* USER CODE END No2_NS_1*/
-
-  if (updateflag != 0)
-  {
-    Custom_STM_App_Update_Char(CUSTOM_STM_NO2, (uint8_t *)NotifyCharData);
-  }
-
-  /* USER CODE BEGIN No2_NS_Last*/
-
-  /* USER CODE END No2_NS_Last*/
-
-  return;
-}
+//void Custom_No2_Send_Notification(void) /* Property Notification */
+//{
+//  uint8_t updateflag = 0;
+//
+//  /* USER CODE BEGIN No2_NS_1*/
+//
+//  /* USER CODE END No2_NS_1*/
+//
+//  if (updateflag != 0)
+//  {
+//    Custom_STM_App_Update_Char(CUSTOM_STM_NO2, (uint8_t *)NotifyCharData);
+//  }
+//
+//  /* USER CODE BEGIN No2_NS_Last*/
+//
+//  /* USER CODE END No2_NS_Last*/
+//
+//  return;
+//}
 
 /* USER CODE BEGIN FD_LOCAL_FUNCTIONS*/
 

@@ -34,12 +34,27 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include  <string.h>
+#include  <stdlib.h>
+#include  <stdint.h>
+#include  <stdio.h>
+
+#include "bme680.h"
+#include "bme680_utils.h"
+#include "bme680_defs.h"
+#include "registry.h"
+
+#include "stm32_seq.h"
+
+#include <oled.h>
+#include "fonts.h"
+
 #include "bme280.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-//#define MY_PIN 9876
+
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -68,6 +83,11 @@ void send_char_by_uart(const char *format, char value);
 void send_str_by_uart(const char *format);
 uint8_t get_to_notify(void);
 void notified(void);
+uint8_t send_value_to_screen(uint8_t counter);
+
+void WS2812b_set_LED_color (int LEDnum, int Red, int Green, int Blue);
+void WS2812b_set_brightness (int brightness);
+void WS2812b_send (void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
